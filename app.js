@@ -1,3 +1,4 @@
+//  requirements
 require('dotenv').config();
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -8,14 +9,16 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 
+// setUp
+
 const app = express();
 
 app.use(express.static("public"));
-app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(session({
-    secret: "that five things you don't know.",
+    secret: "never tell the secret",
     resave: false,
     saveUninitialized: false
 }));
@@ -23,7 +26,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Database
+//Database
 
 mongoose.connect("mongodb://127.0.0.1:27017/userDB")
 
@@ -41,43 +44,49 @@ passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-//Get Routes
+// Get Requests
 
 app.get("/", (req, res) => {
     res.render("home");
 });
 
-app.get("/login", (req, res) => {
-    res.render("login");
-})
-
 app.get("/register", (req, res) => {
     res.render("register")
 })
 
-app.get("/secrets", (req, res)=>{
-    if(req.isAuthenticated()){
-        res.render("secrets");
-    }else{
-        res.redirect("/login");
+app.get("/login", (req, res) => {
+    res.render("login");
+})
+
+app.get("/secrets", (req, res) => {
+    if (req.isAuthenticated()) {
+        res.render("secrets")
+    } else {
+        res.redirect("/login")
     }
 })
 
 app.get("/logout", (req, res) => {
-    req.logOut();
-    res.redirect("/");
+    req.logOut((err) => {
+        if(err){
+            console.log(err);
+        }else{
+            res.redirect("/");
+        }
+    });
+    
 })
 
-// Post Routes
+//  Post Requests
 
 app.post("/register", (req, res) => {
 
-    User.register({username: req.body.username}, req.body.password, (err, user)=>{
-        if(err){
+    User.register({ username: req.body.username }, req.body.password, (err, user) => {
+        if (err) {
             console.log(err);
             res.redirect("/register");
-        }else{
-            passport.authenticate("local")(req, res, ()=>{
+        } else {
+            passport.authenticate("local")(req, res, () => {
                 res.redirect("/secrets")
             })
         }
@@ -85,24 +94,24 @@ app.post("/register", (req, res) => {
 })
 
 app.post("/login", (req, res) => {
- 
-    const newuser = new User({
-        username: req.body.username,
-        password: req.body.password
+    const user = new User({
+        username : req.body.username,
+        password : req.body.password  
     })
 
-    req.logIn(newuser, (err)=>{
+    req.logIn(user, (err) => {
         if(err){
             console.log(err);
         }else{
-            passport.authenticate("local")(req, res, ()=>{
+            passport.authenticate("local")(req, res, ()=> {
                 res.redirect("/secrets");
             })
         }
     })
-
 })
 
+//  server setUp
+
 app.listen(3000, () => {
-    console.log("server is running . . .");
+    console.log('Server is Running . . . .');
 })
